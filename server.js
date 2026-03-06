@@ -11,13 +11,14 @@ connectDB();
 const app = express();
 
 // Allow requests from frontend
-app.use(cors());
-
+app.use(cors({
+    origin: "https://crud-using-mongoose-frontend.vercel.app"
+}));
 app.use(express.json());
 
 // Test route (important)
 app.get("/", (req, res) => {
-  res.send("API is running...");
+    res.send("API is running...");
 });
 
 // API routes
@@ -26,5 +27,5 @@ app.use('/api/employee_details', officeRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
+    console.log(`Server running on port ${PORT}`)
 );
