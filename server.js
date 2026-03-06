@@ -11,9 +11,7 @@ connectDB();
 const app = express();
 
 // Allow requests from frontend
-app.use(cors({
-  origin: "https://crud-using-mongoose-frontend.vercel.app"
-}));
+app.use(cors());
 
 app.use(express.json());
 
