@@ -1,12 +1,39 @@
 const mongoose = require('mongoose');
 
+function validateMongoUri(uri) {
+    if (!uri || uri.trim() === '') {
+        return 'MONGO_URI is not set.';
+    }
+    // Detect mongodb+srv://...@HOST/... - reject if HOST is placeholder (e.g. 1234)
+    const srvMatch = uri.match(/mongodb\+srv:\/\/[^@]*@([^/?]+)/);
+    if (srvMatch) {
+        const host = srvMatch[1];
+        if (/^\d+$/.test(host) || host === '1234' || host.length < 5) {
+            return `MONGO_URI has invalid host "${host}". Use your Atlas cluster hostname (e.g. cluster0.xxxxx.mongodb.net).`;
+        }
+    }
+    // Detect mongodb://HOST - reject if HOST is 1234
+    const standardMatch = uri.match(/^mongodb:\/\/([^/?]+)/);
+    if (standardMatch) {
+        const host = standardMatch[1].split(':')[0];
+        if (host === '1234' || /^\d+$/.test(host)) {
+            return `MONGO_URI has invalid host "${host}". Use localhost or your MongoDB host.`;
+        }
+    }
+    return null;
+}
+
 const connectDB = async () => {
     const uri = process.env.MONGO_URI;
-    if (!uri || uri.trim() === '') {
-        console.error('Error: MONGO_URI is not set in .env');
-        console.error('Add MONGO_URI to your .env file. Examples:');
-        console.error('  Local:  MONGO_URI=mongodb://localhost:27017/your_db_name');
-        console.error('  Atlas:  MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>');
+    const invalid = validateMongoUri(uri);
+    if (invalid) {
+        console.error('Error: ' + invalid);
+        console.error('');
+        console.error('Set MONGO_URI correctly:');
+        console.error('  Local:    MONGO_URI=mongodb://localhost:27017/your_db_name');
+        console.error('  Atlas:   MONGO_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/DBNAME');
+        console.error('');
+        console.error('On Render: Dashboard → Your Service → Environment → add MONGO_URI.');
         process.exit(1);
     }
     try {
@@ -15,7 +42,7 @@ const connectDB = async () => {
     } catch (error) {
         console.error(`Error: ${error.message}`);
         if (error.message.includes('querySrv ENOTFOUND')) {
-            console.error('Check MONGO_URI in .env: use a valid host (e.g. localhost or your Atlas cluster hostname).');
+            console.error('Fix MONGO_URI: use a valid MongoDB host (e.g. cluster0.xxxxx.mongodb.net for Atlas).');
         }
         process.exit(1);
     }
