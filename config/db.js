@@ -1,8 +1,21 @@
 const mongoose = require('mongoose');
 
+function safeMongoHost(uri) {
+    if (!uri) return null;
+    const srvMatch = uri.match(/mongodb\+srv:\/\/[^@]*@([^/?]+)/);
+    if (srvMatch) return srvMatch[1];
+    const standardMatch = uri.match(/^mongodb:\/\/([^/?]+)/);
+    if (standardMatch) return standardMatch[1];
+    return null;
+}
+
 function validateMongoUri(uri) {
     if (!uri || uri.trim() === '') {
         return 'MONGO_URI is not set.';
+    }
+    if (!/^mongodb(\+srv)?:\/\//.test(uri)) {
+        const shown = uri.length > 80 ? `${uri.slice(0, 77)}...` : uri;
+        return `MONGO_URI must start with "mongodb://" or "mongodb+srv://". Current value looks like: "${shown}"`;
     }
     // Detect mongodb+srv://...@HOST/... - reject if HOST is placeholder (e.g. 1234)
     const srvMatch = uri.match(/mongodb\+srv:\/\/[^@]*@([^/?]+)/);
@@ -27,7 +40,9 @@ const connectDB = async () => {
     const uri = process.env.MONGO_URI;
     const invalid = validateMongoUri(uri);
     if (invalid) {
+        const host = safeMongoHost(uri);
         console.error('Error: ' + invalid);
+        if (host) console.error(`Detected MongoDB host: ${host}`);
         console.error('');
         console.error('Set MONGO_URI correctly:');
         console.error('  Local:    MONGO_URI=mongodb://localhost:27017/your_db_name');
