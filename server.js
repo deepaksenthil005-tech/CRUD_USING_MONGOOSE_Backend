@@ -4,7 +4,8 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const officeRoutes = require('./routes/employeeRouter');
 
-dotenv.config();
+// Ensure local .env values override any existing environment variables
+dotenv.config({ override: true });
 connectDB();
 
 const app = express();
